@@ -1,0 +1,315 @@
+{% extends 'estoque/base.html' %} {% block title %}Criar Pedido - Sistema de
+Estoque{% endblock %} {% block content %}
+<div class="card">
+	<h2>📦 Criar Novo Pedido</h2>
+	<p style="margin-bottom: 20px; color: #6c757d">
+		Crie um pedido completo com produtos do estoque, aplicando estratégias de
+		desconto e frete.
+	</p>
+
+	{% if messages %} {% for message in messages %}
+	<div class="alert alert-{{ message.tags }}">{{ message }}</div>
+	{% endfor %} {% endif %}
+
+	<form method="POST" id="pedidoForm">
+		{% csrf_token %}
+
+		<div class="form-group">
+			<label for="numero">📝 Número do Pedido</label>
+			<input
+				type="text"
+				id="numero"
+				name="numero"
+				required
+				placeholder="Ex: PED-001"
+			/>
+		</div>
+
+		<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px">
+			<div class="form-group">
+				<label for="tipo_desconto">💰 Estratégia de Desconto</label>
+				<select id="tipo_desconto" name="tipo_desconto" required>
+					<option value="sem_desconto">Sem desconto</option>
+					<option value="percentual_10">Desconto de 10%</option>
+					<option value="percentual_15">Desconto de 15%</option>
+					<option value="percentual_20">Desconto de 20%</option>
+					<option value="fixo_50">Desconto fixo de R$ 50</option>
+					<option value="fixo_100">Desconto fixo de R$ 100</option>
+					<option value="progressivo">
+						Desconto progressivo por quantidade
+					</option>
+				</select>
+			</div>
+
+			<div class="form-group">
+				<label for="tipo_frete">🚚 Estratégia de Frete</label>
+				<select id="tipo_frete" name="tipo_frete" required>
+					<option value="fixo_50" selected>Frete fixo de R$ 50</option>
+					<option value="fixo_30">Frete fixo de R$ 30</option>
+					<option value="por_peso">Frete por peso (R$ 5/kg)</option>
+					<option value="por_distancia">Frete por distância (R$ 2/km)</option>
+					<option value="gratis">Frete grátis</option>
+				</select>
+			</div>
+		</div>
+
+		<div id="frete_extra" style="display: none">
+			<div class="form-group">
+				<label for="distancia_km">📍 Distância para Entrega (km)</label>
+				<input
+					type="number"
+					id="distancia_km"
+					name="distancia_km"
+					step="0.1"
+					value="0"
+				/>
+				<small style="color: #6c757d"
+					>Necessário para "Frete por Distância"</small
+				>
+			</div>
+		</div>
+
+		<hr style="margin: 30px 0; border: none; border-top: 2px solid #e9ecef" />
+
+		<h3 style="color: #667eea; margin-bottom: 20px">🛒 Produtos do Pedido</h3>
+
+		<div id="produtos_container">
+			<div
+				class="produto-item"
+				style="
+					background: #f8f9fa;
+					padding: 20px;
+					border-radius: 8px;
+					margin-bottom: 15px;
+				"
+			>
+				<div
+					style="
+						display: grid;
+						grid-template-columns: 2fr 1fr 1fr auto;
+						gap: 15px;
+						align-items: end;
+					"
+				>
+					<div class="form-group" style="margin-bottom: 0">
+						<div
+							class="estoque-alert"
+							style="
+								display: none;
+								background: #f8d7da;
+								color: #721c24;
+								padding: 8px 12px;
+								border-radius: 5px;
+								margin-bottom: 8px;
+								font-size: 0.9em;
+								border-left: 4px solid #dc3545;
+							"
+						>
+							📦 <strong>Estoque disponível:</strong>
+							<span class="estoque-quantidade"></span> unidades
+						</div>
+						<label>Produto</label>
+						<select name="produto_id[]" required class="produto-select">
+							<option value="">Selecione um produto</option>
+							{% for produto in produtos %}
+							<option
+								value="{{ produto.id }}"
+								data-preco="{{ produto.preco }}"
+								data-peso="{{ produto.peso }}"
+								data-estoque="{{ produto.quantidade_estoque }}"
+							>
+								{{ produto.nome }} - R$ {{ produto.preco }}
+							</option>
+							{% endfor %}
+						</select>
+					</div>
+
+					<div class="form-group" style="margin-bottom: 0">
+						<label>Quantidade</label>
+						<input
+							type="number"
+							name="quantidade[]"
+							min="1"
+							value="1"
+							required
+							class="quantidade-input"
+						/>
+					</div>
+
+					<div class="form-group" style="margin-bottom: 0">
+						<label>Subtotal</label>
+						<input type="text" class="subtotal" readonly disabled />
+					</div>
+
+					<button
+						type="button"
+						class="btn btn-secondary remover-produto"
+						style="padding: 12px 20px; background: #e9ecef"
+					>
+						❌
+					</button>
+				</div>
+			</div>
+		</div>
+
+		<button
+			type="button"
+			id="adicionar_produto"
+			class="btn btn-secondary"
+			style="margin-bottom: 20px; background: #28a745"
+		>
+			➕ Adicionar Produto
+		</button>
+
+		<div
+			class="result"
+			style="background: #f8f9fa; border-left: 4px solid #667eea"
+		>
+			<h3 style="color: #667eea">📊 Resumo do Pedido</h3>
+			<div class="result-item">
+				<span>Valor dos Produtos:</span>
+				<span id="total_produtos">R$ 0,00</span>
+			</div>
+			<div class="result-item">
+				<span>Peso Total:</span>
+				<span id="peso_total">0 kg</span>
+			</div>
+			<div class="result-item">
+				<span>Quantidade Total:</span>
+				<span id="quantidade_total">0 itens</span>
+			</div>
+		</div>
+
+		<button type="submit" class="btn" style="width: 100%; margin-top: 20px">
+			✅ Criar Pedido
+		</button>
+	</form>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+	let produtoIndex = 0;
+
+	// Mostrar/ocultar campo de distância
+	document.getElementById('tipo_frete').addEventListener('change', function () {
+		const freteExtra = document.getElementById('frete_extra');
+		freteExtra.style.display =
+			this.value === 'por_distancia' ? 'block' : 'none';
+	});
+
+	// Adicionar produto
+	document
+		.getElementById('adicionar_produto')
+		.addEventListener('click', function () {
+			const container = document.getElementById('produtos_container');
+			const firstItem = container.querySelector('.produto-item');
+			const newItem = firstItem.cloneNode(true);
+
+			// Limpar valores
+			newItem.querySelector('select').value = '';
+			newItem.querySelector('.quantidade-input').value = '1';
+			newItem.querySelector('.subtotal').value = '';
+			newItem.querySelector('.estoque-alert').style.display = 'none';
+			newItem.querySelector('.estoque-quantidade').textContent = '';
+
+			container.appendChild(newItem);
+			attachEventListeners(newItem);
+			calcularTotais();
+		});
+
+	// Remover produto
+	function attachEventListeners(item) {
+		item
+			.querySelector('.remover-produto')
+			.addEventListener('click', function () {
+				if (document.querySelectorAll('.produto-item').length > 1) {
+					item.remove();
+					calcularTotais();
+				} else {
+					alert('Você precisa ter pelo menos um produto no pedido!');
+				}
+			});
+
+		item
+			.querySelector('.produto-select')
+			.addEventListener('change', function () {
+				const option = this.options[this.selectedIndex];
+				const alertDiv = item.querySelector('.estoque-alert');
+				const quantidadeSpan = item.querySelector('.estoque-quantidade');
+
+				if (option && option.value) {
+					const estoque = parseInt(option.dataset.estoque) || 0;
+					quantidadeSpan.textContent = estoque;
+					alertDiv.style.display = 'block';
+				} else {
+					alertDiv.style.display = 'none';
+				}
+
+				calcularSubtotal(item);
+			});
+
+		item
+			.querySelector('.quantidade-input')
+			.addEventListener('input', function () {
+				calcularSubtotal(item);
+			});
+	}
+
+	function calcularSubtotal(item) {
+		const select = item.querySelector('.produto-select');
+		const quantidade =
+			parseFloat(item.querySelector('.quantidade-input').value) || 0;
+		const option = select.options[select.selectedIndex];
+
+		if (option && option.value) {
+			const preco = parseFloat(option.dataset.preco) || 0;
+			const estoque = parseInt(option.dataset.estoque) || 0;
+
+			if (quantidade > estoque) {
+				alert(`Quantidade indisponível! Estoque atual: ${estoque}`);
+				item.querySelector('.quantidade-input').value = estoque;
+				return calcularSubtotal(item);
+			}
+
+			const subtotal = preco * quantidade;
+			item.querySelector('.subtotal').value =
+				'R$ ' + subtotal.toFixed(2).replace('.', ',');
+		}
+
+		calcularTotais();
+	}
+
+	function calcularTotais() {
+		let totalProdutos = 0;
+		let pesoTotal = 0;
+		let quantidadeTotal = 0;
+
+		document.querySelectorAll('.produto-item').forEach((item) => {
+			const select = item.querySelector('.produto-select');
+			const quantidade =
+				parseFloat(item.querySelector('.quantidade-input').value) || 0;
+			const option = select.options[select.selectedIndex];
+
+			if (option && option.value) {
+				const preco = parseFloat(option.dataset.preco) || 0;
+				const peso = parseFloat(option.dataset.peso) || 0;
+
+				totalProdutos += preco * quantidade;
+				pesoTotal += peso * quantidade;
+				quantidadeTotal += quantidade;
+			}
+		});
+
+		document.getElementById('total_produtos').textContent =
+			'R$ ' + totalProdutos.toFixed(2).replace('.', ',');
+		document.getElementById('peso_total').textContent =
+			pesoTotal.toFixed(2) + ' kg';
+		document.getElementById('quantidade_total').textContent =
+			quantidadeTotal + ' itens';
+	}
+
+	// Inicializar
+	document.querySelectorAll('.produto-item').forEach((item) => {
+		attachEventListeners(item);
+	});
+</script>
+{% endblock %}

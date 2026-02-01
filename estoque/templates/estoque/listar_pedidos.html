@@ -1,0 +1,99 @@
+{% extends 'estoque/base.html' %} {% block title %}Listar Pedidos - Sistema de
+Estoque{% endblock %} {% block content %}
+<div class="card">
+	<h2>📋 Pedidos Cadastrados</h2>
+	<p style="margin-bottom: 20px; color: #6c757d">
+		Lista de todos os pedidos criados no sistema com suas respectivas
+		estratégias.
+	</p>
+
+	{% if pedidos %}
+	<div style="overflow-x: auto">
+		<table style="width: 100%; border-collapse: collapse">
+			<thead>
+				<tr style="background: #f8f9fa; border-bottom: 2px solid #667eea">
+					<th style="padding: 15px; text-align: left">Número</th>
+					<th style="padding: 15px; text-align: left">Data</th>
+					<th style="padding: 15px; text-align: left">Estratégia Desconto</th>
+					<th style="padding: 15px; text-align: left">Estratégia Frete</th>
+					<th style="padding: 15px; text-align: right">Valor Total</th>
+					<th style="padding: 15px; text-align: center">Ações</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for pedido in pedidos %}
+				<tr style="border-bottom: 1px solid #e9ecef">
+					<td style="padding: 15px; font-weight: 600">{{ pedido.numero }}</td>
+					<td style="padding: 15px">
+						{{ pedido.data_criacao|date:"d/m/Y H:i" }}
+					</td>
+					<td style="padding: 15px">
+						<span class="strategy-badge" style="font-size: 0.85em">
+							💰 {{ pedido.get_tipo_desconto_display }}
+						</span>
+					</td>
+					<td style="padding: 15px">
+						<span
+							class="strategy-badge"
+							style="font-size: 0.85em; background: #764ba2"
+						>
+							🚚 {{ pedido.get_tipo_frete_display }}
+						</span>
+					</td>
+					<td
+						style="
+							padding: 15px;
+							text-align: right;
+							font-weight: 600;
+							color: #667eea;
+						"
+					>
+						R$ {{ pedido.valor_total }}
+					</td>
+					<td style="padding: 15px; text-align: center">
+						<a
+							href="{% url 'detalhes_pedido' pedido.id %}"
+							style="
+								background: #667eea;
+								color: white;
+								padding: 8px 15px;
+								border-radius: 5px;
+								text-decoration: none;
+								font-size: 0.9em;
+							"
+						>
+							👁️ Ver
+						</a>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+
+	<div
+		style="
+			margin-top: 20px;
+			padding: 15px;
+			background: #e7f3ff;
+			border-radius: 8px;
+		"
+	>
+		<strong>Total de pedidos:</strong> {{ pedidos|length }}
+	</div>
+	{% else %}
+	<div style="text-align: center; padding: 60px 20px">
+		<div style="font-size: 4em; margin-bottom: 20px">📦</div>
+		<h3 style="color: #6c757d; margin-bottom: 15px">
+			Nenhum pedido cadastrado
+		</h3>
+		<p style="color: #6c757d; margin-bottom: 30px">
+			Crie seu primeiro pedido para começar a testar o sistema!
+		</p>
+		<a href="{% url 'criar_pedido_form' %}" class="btn">
+			➕ Criar Primeiro Pedido
+		</a>
+	</div>
+	{% endif %}
+</div>
+{% endblock %}
