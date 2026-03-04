@@ -21,14 +21,16 @@ def create_default_user():
     db = SessionLocal()
     try:
         # Verificar se já existe o usuário admin
-        existing_user = db.query(Usuario).filter(Usuario.email == "admin@estoque.com").first()
+        existing_user = (
+            db.query(Usuario).filter(Usuario.email == "admin@estoque.com").first()
+        )
         if not existing_user:
             admin_user = Usuario(
                 email="admin@estoque.com",
                 nome="Administrador",
                 senha_hash=hash_senha("admin123"),
                 is_admin=True,
-                ativo=True
+                ativo=True,
             )
             db.add(admin_user)
             db.commit()
