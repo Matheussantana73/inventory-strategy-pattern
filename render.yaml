@@ -20,7 +20,7 @@ services:
     startCommand: cd microservices/calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.13.4'
+        value: '3.12.3'
     healthCheckPath: /health
 
   # ===================
@@ -34,7 +34,7 @@ services:
     startCommand: cd microservices/produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.13.4'
+        value: '3.12.3'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -56,7 +56,7 @@ services:
     startCommand: cd microservices/auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.13.4'
+        value: '3.12.3'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -84,7 +84,7 @@ services:
     startCommand: cd microservices/pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.13.4'
+        value: '3.12.3'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
