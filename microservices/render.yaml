@@ -20,7 +20,7 @@ services:
     startCommand: cd calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.11'
+        value: '3.11.8'
     healthCheckPath: /health
 
   # ===================
@@ -34,7 +34,7 @@ services:
     startCommand: cd produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.11'
+        value: '3.11.8'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -56,7 +56,7 @@ services:
     startCommand: cd auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.11'
+        value: '3.11.8'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -84,7 +84,7 @@ services:
     startCommand: cd pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: '3.11'
+        value: '3.11.8'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -119,7 +119,7 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: '20'
+        value: '20.11.0'
       - key: VITE_API_BASE_URL
         value: https://pedido-service.onrender.com # Atualizar com a URL real do serviço
       - key: VITE_AUTH_SERVICE_URL
