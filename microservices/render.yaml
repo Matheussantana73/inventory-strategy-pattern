@@ -20,7 +20,7 @@ services:
     startCommand: cd calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: '3.11'
     healthCheckPath: /health
 
   # ===================
@@ -34,15 +34,15 @@ services:
     startCommand: cd produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: '3.11'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
           property: connectionString
       - key: REDIS_HOST
-        value: ""  # Opcional: configurar Upstash Redis externamente
+        value: '' # Opcional: configurar Upstash Redis externamente
       - key: REDIS_PORT
-        value: "6379"
+        value: '6379'
     healthCheckPath: /health
 
   # ===================
@@ -56,21 +56,21 @@ services:
     startCommand: cd auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: '3.11'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
           property: connectionString
       - key: REDIS_HOST
-        value: ""  # Opcional: configurar Upstash Redis externamente
+        value: '' # Opcional: configurar Upstash Redis externamente
       - key: REDIS_PORT
-        value: "6379"
+        value: '6379'
       - key: JWT_SECRET_KEY
-        generateValue: true  # Render vai gerar automaticamente
+        generateValue: true # Render vai gerar automaticamente
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
-        value: "30"
+        value: '30'
       - key: REFRESH_TOKEN_EXPIRE_DAYS
-        value: "7"
+        value: '7'
     healthCheckPath: /health
 
   # ===================
@@ -84,15 +84,15 @@ services:
     startCommand: cd pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: '3.11'
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
           property: connectionString
       - key: REDIS_HOST
-        value: ""  # Opcional
+        value: '' # Opcional
       - key: REDIS_PORT
-        value: "6379"
+        value: '6379'
       - key: PRODUTO_SERVICE_URL
         fromService:
           type: web
@@ -119,9 +119,9 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: "20"
+        value: '20'
       - key: VITE_API_BASE_URL
-        value: https://pedido-service.onrender.com  # Atualizar com a URL real do serviço
+        value: https://pedido-service.onrender.com # Atualizar com a URL real do serviço
       - key: VITE_AUTH_SERVICE_URL
         value: https://auth-service.onrender.com
       - key: VITE_PRODUTO_SERVICE_URL
