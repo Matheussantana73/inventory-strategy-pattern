@@ -1,0 +1,136 @@
+# Render Blueprint para deploy da aplicação de Estoque
+# Este arquivo configura automaticamente todos os serviços no Render.com
+
+databases:
+  - name: estoque-db
+    databaseName: estoque_db
+    user: estoque_user
+    plan: free
+    # PostgreSQL gratuito com 256MB RAM e 1GB de espaço
+
+services:
+  # ===================
+  # Serviço de Cálculo (sem dependências de DB)
+  # ===================
+  - type: web
+    name: calculo-service
+    runtime: python
+    plan: free
+    buildCommand: pip install -r calculo_service/requirements.txt
+    startCommand: cd calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+    healthCheckPath: /health
+
+  # ===================
+  # Serviço de Produtos
+  # ===================
+  - type: web
+    name: produto-service
+    runtime: python
+    plan: free
+    buildCommand: pip install -r produto_service/requirements.txt
+    startCommand: cd produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: estoque-db
+          property: connectionString
+      - key: REDIS_HOST
+        value: ""  # Opcional: configurar Upstash Redis externamente
+      - key: REDIS_PORT
+        value: "6379"
+    healthCheckPath: /health
+
+  # ===================
+  # Serviço de Autenticação
+  # ===================
+  - type: web
+    name: auth-service
+    runtime: python
+    plan: free
+    buildCommand: pip install -r auth_service/requirements.txt
+    startCommand: cd auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: estoque-db
+          property: connectionString
+      - key: REDIS_HOST
+        value: ""  # Opcional: configurar Upstash Redis externamente
+      - key: REDIS_PORT
+        value: "6379"
+      - key: JWT_SECRET_KEY
+        generateValue: true  # Render vai gerar automaticamente
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "30"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "7"
+    healthCheckPath: /health
+
+  # ===================
+  # Serviço de Pedidos
+  # ===================
+  - type: web
+    name: pedido-service
+    runtime: python
+    plan: free
+    buildCommand: pip install -r pedido_service/requirements.txt
+    startCommand: cd pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: estoque-db
+          property: connectionString
+      - key: REDIS_HOST
+        value: ""  # Opcional
+      - key: REDIS_PORT
+        value: "6379"
+      - key: PRODUTO_SERVICE_URL
+        fromService:
+          type: web
+          name: produto-service
+          property: host
+      - key: CALCULO_SERVICE_URL
+        fromService:
+          type: web
+          name: calculo-service
+          property: host
+    healthCheckPath: /health
+
+  # ===================
+  # Frontend (Static Site)
+  # ===================
+  - type: web
+    name: estoque-frontend
+    runtime: static
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_BASE_URL
+        value: https://pedido-service.onrender.com  # Atualizar com a URL real do serviço
+      - key: VITE_AUTH_SERVICE_URL
+        value: https://auth-service.onrender.com
+      - key: VITE_PRODUTO_SERVICE_URL
+        value: https://produto-service.onrender.com
+      - key: VITE_CALCULO_SERVICE_URL
+        value: https://calculo-service.onrender.com
+
+# Nota: Render não oferece Redis gratuito
+# Opções para Redis:
+# 1. Usar Upstash Redis (gratuito, 10k comandos/dia): https://upstash.com
+# 2. Usar Redis Cloud (gratuito, 30MB): https://redis.com/try-free
+# 3. Remover cache Redis temporariamente (menos performance)
