@@ -115,9 +115,8 @@ services:
   - type: web
     name: estoque-frontend
     runtime: static
-    rootDirectory: microservices
-    buildCommand: cd frontend && npm install && npm run build
-    staticPublishPath: ./frontend/dist
+    buildCommand: cd microservices/frontend && npm install && npm run build
+    staticPublishPath: microservices/frontend/dist
     routes:
       - type: rewrite
         source: /*
