@@ -16,9 +16,8 @@ services:
     name: calculo-service
     runtime: python
     plan: free
-    rootDirectory: microservices
-    buildCommand: pip install -r calculo_service/requirements.txt
-    startCommand: cd calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r microservices/calculo_service/requirements.txt
+    startCommand: cd microservices/calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: '3.13.4'
@@ -31,9 +30,8 @@ services:
     name: produto-service
     runtime: python
     plan: free
-    rootDirectory: microservices
-    buildCommand: pip install -r produto_service/requirements.txt
-    startCommand: cd produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r microservices/produto_service/requirements.txt
+    startCommand: cd microservices/produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: '3.13.4'
@@ -54,9 +52,8 @@ services:
     name: auth-service
     runtime: python
     plan: free
-    rootDirectory: microservices
-    buildCommand: pip install -r auth_service/requirements.txt
-    startCommand: cd auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r microservices/auth_service/requirements.txt
+    startCommand: cd microservices/auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: '3.13.4'
@@ -83,9 +80,8 @@ services:
     name: pedido-service
     runtime: python
     plan: free
-    rootDirectory: microservices
-    buildCommand: pip install -r pedido_service/requirements.txt
-    startCommand: cd pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    buildCommand: pip install -r microservices/pedido_service/requirements.txt
+    startCommand: cd microservices/pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: '3.13.4'
