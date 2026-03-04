@@ -17,12 +17,10 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r microservices/calculo_service/requirements.txt
-    startCommand: cd microservices/calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=/opt/render/project/src/microservices uvicorn main:app --host 0.0.0.0 --port $PORT --app-dir /opt/render/project/src/microservices/calculo_service
     envVars:
       - key: PYTHON_VERSION
         value: '3.12.3'
-      - key: PYTHONPATH
-        value: /opt/render/project/src/microservices
     healthCheckPath: /health
 
   # ===================
@@ -33,12 +31,10 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r microservices/produto_service/requirements.txt
-    startCommand: cd microservices/produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=/opt/render/project/src/microservices uvicorn main:app --host 0.0.0.0 --port $PORT --app-dir /opt/render/project/src/microservices/produto_service
     envVars:
       - key: PYTHON_VERSION
         value: '3.12.3'
-      - key: PYTHONPATH
-        value: /opt/render/project/src/microservices
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -57,12 +53,10 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r microservices/auth_service/requirements.txt
-    startCommand: cd microservices/auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=/opt/render/project/src/microservices uvicorn main:app --host 0.0.0.0 --port $PORT --app-dir /opt/render/project/src/microservices/auth_service
     envVars:
       - key: PYTHON_VERSION
         value: '3.12.3'
-      - key: PYTHONPATH
-        value: /opt/render/project/src/microservices
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
@@ -87,12 +81,10 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r microservices/pedido_service/requirements.txt
-    startCommand: cd microservices/pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: PYTHONPATH=/opt/render/project/src/microservices uvicorn main:app --host 0.0.0.0 --port $PORT --app-dir /opt/render/project/src/microservices/pedido_service
     envVars:
       - key: PYTHON_VERSION
         value: '3.12.3'
-      - key: PYTHONPATH
-        value: /opt/render/project/src/microservices
       - key: DATABASE_URL
         fromDatabase:
           name: estoque-db
