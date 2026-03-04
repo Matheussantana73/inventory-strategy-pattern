@@ -1,4 +1,5 @@
 """Views do sistema de estoque com padrão Strategy"""
+
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
@@ -25,7 +26,7 @@ from estoque.strategies.frete import (
 # Mapeamento de estratégias disponíveis
 ESTRATEGIAS_DESCONTO = {
     "percentual_10": lambda: DescontoPercentual(10),
-    "percentual_15": lambda: DescontoPercentual(15),
+    "percentual_15": lambda: DescontoPercentual(50),
     "percentual_20": lambda: DescontoPercentual(20),
     "percentual_30": lambda: DescontoPercentual(30),
     "fixo_50": lambda: DescontoFixo(50),
@@ -99,12 +100,8 @@ def calcular_pedido_dinamico(request, pedido_id: int):
     pedido = get_object_or_404(Pedido, id=pedido_id)
 
     # Obter estratégias do pedido
-    desconto = ESTRATEGIAS_DESCONTO.get(
-        pedido.tipo_desconto, lambda: SemDesconto()
-    )()
-    frete = ESTRATEGIAS_FRETE.get(
-        pedido.tipo_frete, lambda: FreteFixo(50)
-    )()
+    desconto = ESTRATEGIAS_DESCONTO.get(pedido.tipo_desconto, lambda: SemDesconto())()
+    frete = ESTRATEGIAS_FRETE.get(pedido.tipo_frete, lambda: FreteFixo(50))()
 
     calculadora = CalculadoraPedido(desconto, frete)
 
@@ -112,9 +109,7 @@ def calcular_pedido_dinamico(request, pedido_id: int):
     valor_total = sum(
         item.quantidade * item.preco_unitario for item in pedido.itens.all()
     )
-    peso_total = sum(
-        item.produto.peso * item.quantidade for item in pedido.itens.all()
-    )
+    peso_total = sum(item.produto.peso * item.quantidade for item in pedido.itens.all())
     quantidade_total = sum(item.quantidade for item in pedido.itens.all())
 
     resultado = calculadora.calcular_total(
@@ -127,16 +122,19 @@ def calcular_pedido_dinamico(request, pedido_id: int):
     pedido.valor_total = resultado.valor_final
     pedido.save(update_fields=["valor_total"])
 
-    return JsonResponse({
-        **_pydantic_to_json(resultado),
-        "pedido_numero": pedido.numero,
-        "itens_count": quantidade_total,
-    })
+    return JsonResponse(
+        {
+            **_pydantic_to_json(resultado),
+            "pedido_numero": pedido.numero,
+            "itens_count": quantidade_total,
+        }
+    )
 
 
 # ======================
 # Views para Interface Web
 # ======================
+
 
 @require_http_methods(["GET"])
 def home(request):
@@ -154,7 +152,7 @@ def testar_estrategias(request):
 def calcular_estrategias_api(request):
     """
     API para calcular valores com diferentes estratégias
-    
+
     Parâmetros GET:
         - valor_produtos: float
         - quantidade: int
@@ -171,11 +169,11 @@ def calcular_estrategias_api(request):
         distancia_km = float(request.GET.get("distancia_km", 0))
         tipo_desconto = request.GET.get("tipo_desconto", "sem_desconto")
         tipo_frete = request.GET.get("tipo_frete", "fixo_50")
-        
+
         # Obter estratégias
         desconto = ESTRATEGIAS_DESCONTO.get(tipo_desconto, lambda: SemDesconto())()
         frete = ESTRATEGIAS_FRETE.get(tipo_frete, lambda: FreteFixo(50))()
-        
+
         # Calcular
         calculadora = CalculadoraPedido(desconto, frete)
         resultado = calculadora.calcular_total(
@@ -184,9 +182,9 @@ def calcular_estrategias_api(request):
             peso_kg=peso_kg,
             distancia_km=distancia_km,
         )
-        
+
         return JsonResponse(_pydantic_to_json(resultado))
-    
+
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
@@ -201,32 +199,32 @@ def criar_pedido_form(request):
             tipo_desconto = request.POST.get("tipo_desconto")
             tipo_frete = request.POST.get("tipo_frete")
             distancia_km = float(request.POST.get("distancia_km", 0))
-            
+
             # Verificar se pedido já existe
             if Pedido.objects.filter(numero=numero).exists():
                 messages.error(request, f"Pedido {numero} já existe!")
                 return redirect("criar_pedido_form")
-            
+
             # Criar pedido
             pedido = Pedido.objects.create(
                 numero=numero,
                 tipo_desconto=tipo_desconto,
                 tipo_frete=tipo_frete,
             )
-            
+
             # Adicionar itens
             produto_ids = request.POST.getlist("produto_id[]")
             quantidades = request.POST.getlist("quantidade[]")
-            
+
             valor_total_produtos = Decimal("0")
             peso_total = 0
             quantidade_total = 0
-            
+
             for produto_id, quantidade_str in zip(produto_ids, quantidades):
                 if produto_id and quantidade_str:
                     produto = Produto.objects.get(id=produto_id)
                     quantidade = int(quantidade_str)
-                    
+
                     # Verificar estoque
                     if quantidade > produto.quantidade_estoque:
                         pedido.delete()
@@ -235,7 +233,7 @@ def criar_pedido_form(request):
                             f"Quantidade insuficiente para {produto.nome}! Estoque: {produto.quantidade_estoque}",
                         )
                         return redirect("criar_pedido_form")
-                    
+
                     # Criar item
                     ItemPedido.objects.create(
                         pedido=pedido,
@@ -243,20 +241,20 @@ def criar_pedido_form(request):
                         quantidade=quantidade,
                         preco_unitario=produto.preco,
                     )
-                    
+
                     # Atualizar estoque
                     produto.quantidade_estoque -= quantidade
                     produto.save()
-                    
+
                     # Acumular valores
                     valor_total_produtos += produto.preco * quantidade
                     peso_total += produto.peso * quantidade
                     quantidade_total += quantidade
-            
+
             # Calcular valor final com estratégias
             desconto = ESTRATEGIAS_DESCONTO.get(tipo_desconto, lambda: SemDesconto())()
             frete = ESTRATEGIAS_FRETE.get(tipo_frete, lambda: FreteFixo(50))()
-            
+
             calculadora = CalculadoraPedido(desconto, frete)
             resultado = calculadora.calcular_total(
                 valor_produtos=float(valor_total_produtos),
@@ -264,21 +262,21 @@ def criar_pedido_form(request):
                 peso_kg=peso_total,
                 distancia_km=distancia_km,
             )
-            
+
             # Salvar valor total
             pedido.valor_total = resultado.valor_final
             pedido.save()
-            
+
             messages.success(
                 request,
                 f"Pedido {numero} criado com sucesso! Valor total: R$ {resultado.valor_final}",
             )
             return redirect("detalhes_pedido", pedido_id=pedido.id)
-        
+
         except Exception as e:
             messages.error(request, f"Erro ao criar pedido: {str(e)}")
             return redirect("criar_pedido_form")
-    
+
     # GET - mostrar formulário
     produtos = Produto.objects.filter(quantidade_estoque__gt=0)
     return render(request, "estoque/criar_pedido.html", {"produtos": produtos})
@@ -295,20 +293,18 @@ def listar_pedidos(request):
 def detalhes_pedido(request, pedido_id):
     """Detalhes de um pedido específico"""
     pedido = get_object_or_404(Pedido, id=pedido_id)
-    
+
     # Calcular valores detalhados
     valor_total_produtos = sum(
         item.quantidade * item.preco_unitario for item in pedido.itens.all()
     )
-    peso_total = sum(
-        item.produto.peso * item.quantidade for item in pedido.itens.all()
-    )
+    peso_total = sum(item.produto.peso * item.quantidade for item in pedido.itens.all())
     quantidade_total = sum(item.quantidade for item in pedido.itens.all())
-    
+
     # Obter estratégias
     desconto = ESTRATEGIAS_DESCONTO.get(pedido.tipo_desconto, lambda: SemDesconto())()
     frete = ESTRATEGIAS_FRETE.get(pedido.tipo_frete, lambda: FreteFixo(50))()
-    
+
     # Calcular
     calculadora = CalculadoraPedido(desconto, frete)
     resultado = calculadora.calcular_total(
@@ -316,7 +312,7 @@ def detalhes_pedido(request, pedido_id):
         quantidade=quantidade_total,
         peso_kg=peso_total,
     )
-    
+
     return render(
         request,
         "estoque/detalhes_pedido.html",

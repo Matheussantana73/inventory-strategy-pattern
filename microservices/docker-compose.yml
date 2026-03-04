@@ -1,0 +1,192 @@
+version: '3.8'
+
+services:
+  # ===================
+  # Infraestrutura
+  # ===================
+  
+  db:
+    image: postgres:15-alpine
+    container_name: estoque-db
+    environment:
+      POSTGRES_DB: estoque_db
+      POSTGRES_USER: estoque_user
+      POSTGRES_PASSWORD: estoque_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U estoque_user -d estoque_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: estoque-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ===================
+  # API Gateway
+  # ===================
+  
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: estoque-gateway
+    ports:
+      - "80:80"
+    depends_on:
+      produto-service:
+        condition: service_healthy
+      pedido-service:
+        condition: service_healthy
+      calculo-service:
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
+    networks:
+      - estoque-network
+    restart: unless-stopped
+
+  # ===================
+  # Microserviços
+  # ===================
+
+  produto-service:
+    build:
+      context: .
+      dockerfile: produto_service/Dockerfile
+    container_name: estoque-produto
+    environment:
+      DATABASE_URL: postgresql://estoque_user:estoque_pass@db:5432/estoque_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  pedido-service:
+    build:
+      context: .
+      dockerfile: pedido_service/Dockerfile
+    container_name: estoque-pedido
+    environment:
+      DATABASE_URL: postgresql://estoque_user:estoque_pass@db:5432/estoque_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      PRODUTO_SERVICE_URL: http://produto-service:8001
+      CALCULO_SERVICE_URL: http://calculo-service:8003
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      produto-service:
+        condition: service_healthy
+      calculo-service:
+        condition: service_healthy
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  calculo-service:
+    build:
+      context: .
+      dockerfile: calculo_service/Dockerfile
+    container_name: estoque-calculo
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8003/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: auth_service/Dockerfile
+    container_name: estoque-auth
+    environment:
+      DATABASE_URL: postgresql://estoque_user:estoque_pass@db:5432/estoque_db
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET_KEY: sua-chave-secreta-muito-segura-para-producao-mude-isso
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - estoque-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8004/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+
+  # ===================
+  # Frontend
+  # ===================
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: estoque-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - nginx
+    networks:
+      - estoque-network
+    restart: unless-stopped
+
+networks:
+  estoque-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
