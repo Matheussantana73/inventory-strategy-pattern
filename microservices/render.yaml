@@ -16,6 +16,7 @@ services:
     name: calculo-service
     runtime: python
     plan: free
+    rootDirectory: microservices
     buildCommand: pip install -r calculo_service/requirements.txt
     startCommand: cd calculo_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -30,6 +31,7 @@ services:
     name: produto-service
     runtime: python
     plan: free
+    rootDirectory: microservices
     buildCommand: pip install -r produto_service/requirements.txt
     startCommand: cd produto_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -52,6 +54,7 @@ services:
     name: auth-service
     runtime: python
     plan: free
+    rootDirectory: microservices
     buildCommand: pip install -r auth_service/requirements.txt
     startCommand: cd auth_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -80,6 +83,7 @@ services:
     name: pedido-service
     runtime: python
     plan: free
+    rootDirectory: microservices
     buildCommand: pip install -r pedido_service/requirements.txt
     startCommand: cd pedido_service && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -111,6 +115,7 @@ services:
   - type: web
     name: estoque-frontend
     runtime: static
+    rootDirectory: microservices
     buildCommand: cd frontend && npm install && npm run build
     staticPublishPath: ./frontend/dist
     routes:
